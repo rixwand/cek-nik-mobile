@@ -1,9 +1,9 @@
 import React, {useEffect, useState} from "react";
+import Clipboard from "@react-native-clipboard/clipboard";
 import {pickSingle, types} from "react-native-document-picker";
 import XLSX from "xlsx";
 import {
   Alert,
-  PermissionsAndroid,
   SafeAreaView,
   StyleSheet,
   Text,
@@ -12,21 +12,71 @@ import {
 } from "react-native";
 import Logo from "../svgs/upload.svg";
 import Xls from "../svgs/xls.svg";
+import Copy from "../svgs/copy.svg";
 import Close from "../svgs/close.svg";
 import MyButton from "./utils/MyButton";
 import RNFS from "react-native-fs";
 import check from "../helper/check";
 import formatBytes from "../helper/formatBytes";
-import {Table, Row, Rows} from "react-native-table-component";
+import {
+  Table,
+  Row,
+  Rows,
+  TableWrapper,
+  Cell,
+} from "react-native-table-component";
 import {useNetInfo} from "@react-native-community/netinfo";
 
-const ExcelInput = ({setLength, setCount, setLoading}) => {
+const ExcelInput = () => {
+  const [total, setTotal] = useState(0);
+  const [count, setCount] = useState(0);
   const [files, setFiles] = useState();
   const [nik, setNik] = useState([]);
   const [tableHead, setTableHead] = useState(["nik", "kk", "ket"]);
   const [tableRow, setTableRow] = useState([]);
   const netInfo = useNetInfo();
-
+  const elementButton = (value, rowData) => (
+    <TouchableOpacity onPress={() => copy(rowData)}>
+      <View style={{flexDirection: "row", justifyContent: "center"}}>
+        <Text
+          style={{
+            justifyContent: "center",
+            marginRight: 2,
+            color: rowData[2] >= 3 ? "white" : "gray",
+          }}>
+          {value}
+        </Text>
+        <View style={{justifyContent: "center"}}>
+          {rowData[2] >= 3 ? (
+            <Copy width={15} height={15} stroke={"white"} fill={"white"} />
+          ) : (
+            <Copy width={15} height={15} stroke={"blue"} fill={"blue"} />
+          )}
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+  const buttonWrapper = (value, rowData) => (
+    <TouchableOpacity onPress={() => copy(value)}>
+      <View style={{flexDirection: "row", justifyContent: "center"}}>
+        <Text
+          style={{
+            justifyContent: "center",
+            marginRight: 2,
+            color: rowData[2] >= 3 ? "white" : "gray",
+          }}>
+          {value}
+        </Text>
+        <View style={{justifyContent: "center"}}>
+          {rowData[2] >= 3 ? (
+            <Copy width={15} height={15} stroke={"white"} fill={"white"} />
+          ) : (
+            <Copy width={15} height={15} stroke={"blue"} fill={"blue"} />
+          )}
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
   useEffect(() => {
     if (nik.length != 0) {
       const row = nik.map(({nik: NIK, kk, ket}) => [NIK, kk, ket]);
@@ -43,12 +93,10 @@ const ExcelInput = ({setLength, setCount, setLoading}) => {
       const bstr = await RNFS.readFile(files.fileCopyUri, "ascii");
       const wb = XLSX.read(bstr, {type: "binary"});
       const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-      setLoading(true);
-      const res = await check(json, setCount, setLength);
-      setLoading(false);
-      setNik(res);
+      setTotal(json.length);
+      await check(json, setCount, setNik);
     } catch (err) {
-      console.log(err);
+      console.log("ceknik error", err);
     }
   };
   const saveExcel = async () => {
@@ -67,14 +115,13 @@ const ExcelInput = ({setLength, setCount, setLoading}) => {
         .split(":")
         .join(".");
       await RNFS.writeFile(
-        `${RNFS.ExternalStorageDirectoryPath}/Documents/cek-nik/checked ${title}.xlsx`,
+        `${RNFS.ExternalStorageDirectoryPath}/Documents/cek-nik/${title} ${files.name}`,
         bstr,
         "ascii",
       );
-      console.log(RNFS.ExternalStorageDirectoryPath);
       Alert.alert(
         `Berhasil menyimpan File`,
-        `Folder : Documents/cek-nik \nFile : checked ${title}.xlsx`,
+        `Folder : Documents/cek-nik \nFile : ${title} ${files.name}`,
       );
     } catch (error) {
       Alert.alert("Gagal Menyimpan", error);
@@ -94,6 +141,13 @@ const ExcelInput = ({setLength, setCount, setLoading}) => {
       console.log(err);
     }
   };
+
+  function copy(data) {
+    Array.isArray(data)
+      ? Clipboard.setString(`${data[0]}#${data[1]}#`)
+      : Clipboard.setString(data);
+  }
+
   return (
     <View>
       {nik.length == 0 && (
@@ -136,25 +190,57 @@ const ExcelInput = ({setLength, setCount, setLoading}) => {
           </View>
         </View>
       )}
-      {tableRow.length > 0 && (
+      {nik.length > 0 && (
         <View style={style.result}>
-          <TouchableOpacity onPress={saveExcel}>
-            <Text
-              style={{color: "gray", textAlign: "center", color: "#1773FF"}}>
-              Save as Excel
-            </Text>
-          </TouchableOpacity>
-          <Table borderStyle={{borderWidth: 2, borderColor: "#c8e1ff"}}>
-            <Row data={tableHead} textStyle={style.text} flexArr={[5, 5, 1]} />
-            <Rows data={tableRow} textStyle={style.text} flexArr={[5, 5, 1]} />
-          </Table>
           <MyButton
             title={"Back"}
             onPress={() => {
+              check(
+                [],
+                () => {},
+                () => {},
+              );
               setNik([]);
               setTableRow([]);
             }}
           />
+          <TouchableOpacity onPress={saveExcel}>
+            {count == total && (
+              <Text style={{textAlign: "center", color: "#1773FF"}}>
+                Save as Excel
+              </Text>
+            )}
+            <Text style={{color: "gray", textAlign: "center"}}>
+              {count}/{total}
+            </Text>
+          </TouchableOpacity>
+          {/* c8e1ff */}
+          <Table borderStyle={{borderWidth: 2, borderColor: "#c8e1ff"}}>
+            <Row data={tableHead} textStyle={style.text} flexArr={[5, 5, 1]} />
+            {/* <Rows data={tableRow} textStyle={style.text} flexArr={[5, 5, 1]} /> */}
+            {tableRow.map((rowData, index) => (
+              <TableWrapper
+                key={index}
+                style={{
+                  flexDirection: "row",
+                  backgroundColor: rowData[2] >= 3 ? "red" : "transparent",
+                }}>
+                {rowData.map((cellData, cellIndex) => (
+                  <Cell
+                    key={cellIndex}
+                    data={
+                      cellIndex === 2
+                        ? elementButton(cellData, rowData)
+                        : buttonWrapper(cellData, rowData)
+                    }
+                    textStyle={{color: rowData[2] >= 3 ? "white" : "gray"}}
+                    flex={cellIndex == 2 ? 1 : 5}
+                  />
+                ))}
+              </TableWrapper>
+            ))}
+          </Table>
+          <View style={{height: 20}}></View>
         </View>
       )}
     </View>

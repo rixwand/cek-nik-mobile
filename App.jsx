@@ -1,6 +1,5 @@
 import React, {useState} from "react";
 import {Dimensions, ScrollView, StyleSheet, Text, View} from "react-native";
-import Loading from "./components/utils/Loading";
 import Nav from "./components/utils/Nav";
 import FormInput from "./components/FormInput";
 import ExcelInput from "./components/ExcelInput";
@@ -9,10 +8,6 @@ const screen = Dimensions.get("screen");
 
 const App = () => {
   const [active, setActive] = useState("Form");
-  const [length, setLength] = useState(0);
-  const [count, setCount] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const props = {setLength, setCount, setLoading};
   const excel = () => {
     active == "Form" && setActive("Excel");
   };
@@ -77,15 +72,10 @@ const App = () => {
             />
           </View>
           <View style={style.input}>
-            {active == "Form" ? (
-              <FormInput {...props} />
-            ) : (
-              <ExcelInput {...props} />
-            )}
+            {active == "Form" ? <FormInput /> : <ExcelInput />}
           </View>
         </View>
       </ScrollView>
-      {loading && <Loading {...{length, count}} />}
     </View>
   );
 };

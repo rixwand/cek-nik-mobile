@@ -1,10 +1,10 @@
 import React, {useState} from "react";
 import {Alert, StyleSheet, Text, TextInput, View} from "react-native";
-import check from "../helper/check";
+import jsdom from "jsdom-jscore-rn";
 import MyButton from "./utils/MyButton";
 import {useNetInfo} from "@react-native-community/netinfo";
 
-const FormInput = ({children, setLength, setCount, setLoading}) => {
+const FormInput = () => {
   const [nik, setNik] = useState();
   const [kk, setKk] = useState();
   const [notValid, setnotValid] = useState();
@@ -17,17 +17,19 @@ const FormInput = ({children, setLength, setCount, setLoading}) => {
     if (kk.length < 16) return setnotValid("kk");
     if (!netInfo.isConnected)
       return Alert.alert("Error", "No internet connection");
-
-    const data = [{nik, kk}];
-    setLoading(true);
-    const result = await check(data, setCount, setLength);
-    Alert.alert(
-      "Success",
-      `nik : ${result.at(0).nik} \nkk: ${result.at(0).kk} \nket: ${
-        result.at(0).ket
-      }`,
-    );
-    setLoading(false);
+    try {
+      const result = await cekNik(nik, kk);
+      Alert.alert(
+        "Success",
+        `\
+nik : ${result.nik} 
+kk :  ${result.kk} 
+ket :  ${result.ket}`,
+      );
+    } catch (e) {
+      Alert.alert("Oops!!!, something error :(");
+      console.log(e);
+    }
   };
   return (
     <View>
@@ -99,3 +101,31 @@ const style = StyleSheet.create({
 });
 
 export default FormInput;
+
+const cekNik = (nik, kk) => {
+  return new Promise(async (resolve, reject) => {
+    const uri = new URL("https://myim3.indosatooredoo.com/ceknomor/checkForm");
+    uri.searchParams.append("nik", nik);
+    uri.searchParams.append("kk", kk);
+    uri.searchParams.append("send", "PERIKSA");
+    const response = await fetch(uri, {
+      method: "get",
+      headers: {
+        // Cookie: "69C404B2C96EA3BB8583EFE8AF2713E7",
+        Connection: "keep-alive",
+      },
+    });
+    const result = await response.text();
+    jsdom.env(result, (err, window) => {
+      if (err) reject(err);
+      const title = window.document.querySelector("title").textContent;
+      let ket;
+      if (title == "Registration") {
+        ket = window.document.querySelectorAll("ul li").length;
+      } else {
+        ket = 0;
+      }
+      resolve({nik, kk, ket});
+    });
+  });
+};

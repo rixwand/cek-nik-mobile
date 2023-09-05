@@ -1,6 +1,6 @@
 {
-  "name": "belajarNative",
-  "version": "0.0.1",
+  "name": "@rixwand/cek_nik_im3",
+  "version": "1.2.0",
   "private": true,
   "scripts": {
     "android": "react-native run-android",
@@ -10,6 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@react-native-clipboard/clipboard": "^1.11.2",
     "@react-native-community/netinfo": "^9.3.8",
     "axios": "^1.3.4",
     "jsdom-jscore-rn": "^0.1.8",
