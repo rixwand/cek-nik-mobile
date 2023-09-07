@@ -13,7 +13,7 @@ public class MainActivity extends ReactActivity {
    */
   @Override
   protected String getMainComponentName() {
-    return "belajarNative";
+    return "cek_nik_im3";
   }
 
   /**
